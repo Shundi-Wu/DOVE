@@ -8,13 +8,18 @@
 [Zheng Chen](https://zhengchen1999.github.io/), [Zichen Zou](https://github.com/zzctmd), [Kewei Zhang](), [Xiongfei Su](https://ieeexplore.ieee.org/author/37086348852), [Xin Yuan](https://en.westlake.edu.cn/faculty/xin-yuan.html), [Yong Guo](https://www.guoyongcs.com/), and [Yulun Zhang](http://yulunzhang.com/), "DOVE: Efficient One-Step Diffusion Model for Real-World Video Super-Resolution", NeurIPS 2025
 
 <div>
-<a href="https://github.com/zhengchen1999/DOVE/releases" target='_blank' style="text-decoration: none;"><img src="https://img.shields.io/github/downloads/zhengchen1999/DOVE/total?color=green&style=flat"></a>
-<a href="https://github.com/zhengchen1999/DOVE" target='_blank' style="text-decoration: none;"><img src="https://visitor-badge.laobi.icu/badge?page_id=zhengchen1999/DOVE"></a>
-<a href="https://github.com/zhengchen1999/DOVE/stargazers" target='_blank' style="text-decoration: none;"><img src="https://img.shields.io/github/stars/zhengchen1999/DOVE?style=social"></a>
+<a href="https://github.com/zhengchen1999/DOVE/releases" style="text-decoration: none;">
+<img src="https://img.shields.io/github/downloads/zhengchen1999/DOVE/total?color=green&style=flat&cacheSeconds=3600&v=2">
+</a>
+<a href="https://visitor-badge.laobi.icu/badge?page_id=zhengchen1999/DOVE" style="text-decoration: none;">
+<img src="https://visitor-badge.laobi.icu/badge?page_id=zhengchen1999/DOVE">
+</a>
+<a href="https://github.com/zhengchen1999/DOVE/stargazers" style="text-decoration: none;">
+<img src="https://img.shields.io/github/stars/zhengchen1999/DOVE?style=social&cacheSeconds=3600&v=2">
+</a>
 </div>
 
-
-[[project](https://zheng-chen.cn/DOVE)] [[arXiv](https://arxiv.org/abs/2505.16239)] [[supplementary material](https://github.com/zhengchen1999/DOVE/releases/download/v1/Supplementary_Material.pdf)] [[dataset](https://drive.google.com/drive/folders/1e7CyNzfJBa2saWvPr2HI2q_FJhLIc-Ww?usp=drive_link)] [[pretrained models](https://drive.google.com/drive/folders/1wj9jY0fn6prSWJ7BjJOXfxC0bs8skKbQ?usp=sharing)]
+[[paper](https://openreview.net/pdf?id=DkJImu7t3A)] [[project](https://zheng-chen.cn/DOVE)] [[arXiv](https://arxiv.org/abs/2505.16239)] [[supplementary material](https://github.com/zhengchen1999/DOVE/releases/download/v1/Supplementary_Material.pdf)] [[dataset](https://drive.google.com/drive/folders/1e7CyNzfJBa2saWvPr2HI2q_FJhLIc-Ww?usp=drive_link)] [[pretrained models](https://drive.google.com/drive/folders/1wj9jY0fn6prSWJ7BjJOXfxC0bs8skKbQ?usp=sharing)]
 
 
 
