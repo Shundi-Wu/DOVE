@@ -4,3 +4,5 @@ finetune/checkpoint/*
 __pycache__/
 *.py[cod]
 *$py.class
+pretrained_models/CogVideoX1.5-5B
+pretrained_models/DOVE

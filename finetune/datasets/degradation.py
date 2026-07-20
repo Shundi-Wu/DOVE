@@ -525,7 +525,7 @@ class RandomVideoCompression:
             for img in padded_imgs:
                 img = img.astype(np.uint8)
                 frame = av.VideoFrame.from_ndarray(img, format='rgb24')
-                frame.pict_type = 'NONE'
+                frame.pict_type = av.video.frame.PictureType.NONE
                 for packet in stream.encode(frame):
                     container.mux(packet)
 

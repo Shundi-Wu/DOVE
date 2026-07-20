@@ -3,9 +3,12 @@
 # Prevent tokenizer parallelism issues
 export TOKENIZERS_PARALLELISM=false
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROMPT_CACHE="$(realpath "$SCRIPT_DIR/../pretrained_models/prompt_embeddings")"
+
 # Model Configuration
 MODEL_ARGS=(
-    --model_path "THUDM/CogVideoX1.5-5B"
+    --model_path "../pretrained_models/CogVideoX1.5-5B"
     --model_name "dove-s1"
     --model_type "real-sr"
     --training_type "sft"
@@ -34,7 +37,7 @@ TRAIN_ARGS=(
     --train_epochs 1000 # number of training epochs
     --train_steps 10000
     --seed 42 # random seed
-    --batch_size 2
+    --batch_size 1
     --gradient_accumulation_steps 1
     --mixed_precision "bf16"  # ["no", "fp16"] # Only CogVideoX-2B supports fp16 training
     --learning_rate 2e-5
@@ -77,7 +80,7 @@ SR_ARGS=(
     --is_latent false
     --is_cache true
     --empty_prompt true
-    --prompt_cache "prompt_embeddings"
+    --prompt_cache "$PROMPT_CACHE"
     --sr_noise_step 399
     --noise_step 0
     --degradation_config "configs/degradation.yaml"

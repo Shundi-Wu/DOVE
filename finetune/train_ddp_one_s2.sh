@@ -3,6 +3,9 @@
 # Prevent tokenizer parallelism issues
 export TOKENIZERS_PARALLELISM=false
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROMPT_CACHE="$(realpath "$SCRIPT_DIR/../pretrained_models/prompt_embeddings")"
+
 # Model Configuration
 MODEL_ARGS=(
     --model_path "checkpoint/DOVE-s1/ckpt-10000-sft"
@@ -81,7 +84,7 @@ SR_ARGS=(
     --is_latent false
     --is_cache true
     --empty_prompt true
-    --prompt_cache "prompt_embeddings"
+    --prompt_cache "$PROMPT_CACHE"
     --sr_noise_step 399
     --noise_step 0
     --degradation_config "configs/degradation_image_video.yaml"

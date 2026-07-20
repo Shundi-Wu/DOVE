@@ -175,7 +175,7 @@ We provide pretrained weights for DOVE and DOVE-2B.
 
 ## <a name="training"></a>🔧 Training
 
-> **Note:** Training requires 4×A100 GPUs (80 GB each). You can optionally reduce the number of GPUs and use LoRA fine-tuning to reduce GPU memory requirements.
+> **Note:** The included `finetune/accelerate_config.yaml` is configured for 4 GPUs. Check `nvidia-smi` first and set its `gpu_ids` to idle physical GPU IDs (currently `0, 1, 2, 3`); use LoRA fine-tuning if memory is limited.
 
 - Prepare Datasets and Pretrained Models. Download the following resources and place them in the specified directories:
 
@@ -190,16 +190,17 @@ We provide pretrained weights for DOVE and DOVE-2B.
 
   ```bash
   # 🔹 Train dataset
-  python finetune/scripts/prepare_dataset.py --dir /data2/chenzheng/DOVE/datasets/train/HQ-VSR
-  python finetune/scripts/prepare_dataset.py --dir /data2/chenzheng/DOVE/datasets/train/DIV2K_train_HR
+  python finetune/scripts/prepare_dataset.py --dir datasets/train/HQ-VSR
+  python finetune/scripts/prepare_dataset.py --dir datasets/train/DIV2K_train_HR
   # 🔹 Testing dataset
-  python finetune/scripts/prepare_dataset.py --dir /data2/chenzheng/DOVE/datasets/test/UDM10/GT-Video
-  python finetune/scripts/prepare_dataset.py --dir /data2/chenzheng/DOVE/datasets/test/UDM10/LQ-Video
+  python finetune/scripts/prepare_dataset.py --dir datasets/test/UDM10/GT-Video
+  python finetune/scripts/prepare_dataset.py --dir datasets/test/UDM10/LQ-Video
   ```
 
 - 🔹 Stage-1 (Latent-Space): Adaptation. Enter the `finetune/` directory and perform the first-stage training (latent-space) using:
 
   ```bash
+  cd finetune
   bash train_ddp_one_s1.sh
   ```
 
@@ -208,12 +209,14 @@ We provide pretrained weights for DOVE and DOVE-2B.
 - 🔹 Stage-2 (Pixel-Space): Refinement. After Stage-1 training, convert the checkpoint into a loadable SFT weight:
 
   ```bash
-  python finetune/scripts/prepare_sft_ckpt.py --checkpoint_dir checkpoint/DOVE-s1/checkpoint-10000
+  python scripts/prepare_sft_ckpt.py \
+      --checkpoint_dir checkpoint/DOVE-s1/checkpoint-10000 \
+      --weights_source ../pretrained_models/CogVideoX1.5-5B
   ```
 
   > [!NOTE]
   >
-  > You can skip Stage-1 training by directly using our released [DOVE Stage-1 weight]((https://drive.google.com/file/d/1JgoF8XMJ50ora32GTjAhsFQZx48vwUDR/view?usp=drive_link)), which can be loaded as the input checkpoint for Stage-2.
+  > You can skip Stage-1 training by directly using our released [DOVE Stage-1 weight](https://drive.google.com/file/d/1JgoF8XMJ50ora32GTjAhsFQZx48vwUDR/view?usp=drive_link), which can be loaded as the input checkpoint for Stage-2.
 
   Then, run the second-stage fine-tuning:
 
@@ -226,7 +229,9 @@ We provide pretrained weights for DOVE and DOVE-2B.
 - After Stage-2, convert the final checkpoint to a loadable format:
 
   ```bash
-  python finetune/scripts/prepare_sft_ckpt.py --checkpoint_dir checkpoint/DOVE-/checkpoint-500
+  python scripts/prepare_sft_ckpt.py \
+      --checkpoint_dir checkpoint/DOVE-s2/checkpoint-500 \
+      --weights_source ../pretrained_models/CogVideoX1.5-5B
   ```
 
 ## <a name="testing"></a>🔨 Testing
@@ -240,6 +245,10 @@ We provide pretrained weights for DOVE and DOVE-2B.
 > **💡 Prompt Optimization:** DOVE uses an empty prompt (`""`). To accelerate inference, we pre-load the empty prompt embedding from `pretrained_models/prompt_embeddings`. When the prompt is empty, the pre-loaded embedding is used directly, bypassing text encoding and reducing overhead.
 
 ```shell
+# Check GPU utilization, then select an idle GPU (for example, GPU 2).
+nvidia-smi
+export CUDA_VISIBLE_DEVICES=2
+
 # 🔹 Demo inference
 python inference_script.py \
     --input_dir datasets/demo \
@@ -360,4 +369,3 @@ If you find the code helpful in your research or work, please cite the following
 ## <a name="acknowledgements"></a>💡 Acknowledgements
 
 This project is based on [CogVideo](https://github.com/THUDM/CogVideo) and [Open-Sora](https://github.com/hpcaitech/Open-Sora).
-
