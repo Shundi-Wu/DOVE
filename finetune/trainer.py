@@ -29,6 +29,7 @@ from diffusers.pipelines import DiffusionPipeline
 from diffusers.utils.export_utils import export_to_video
 from peft import LoraConfig, get_peft_model_state_dict, set_peft_model_state_dict
 from PIL import Image
+from safetensors.torch import save_file
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
@@ -268,12 +269,14 @@ class Trainer:
         # Prepare VAE and text encoder for encoding
         self.components.vae.requires_grad_(False)
         self.components.text_encoder.requires_grad_(False)
-        self.components.vae = self.components.vae.to(
-            self.accelerator.device, dtype=self.state.weight_dtype
-        )
+        vae_dtype = self.get_vae_dtype()
+        if self.components.vae.dtype != vae_dtype:
+            self.components.vae = self.components.vae.to(dtype=vae_dtype)
+        self.components.vae = self.components.vae.to(self.accelerator.device)
         self.components.text_encoder = self.components.text_encoder.to(
             self.accelerator.device, dtype=self.state.weight_dtype
         )
+        self.prepare_empty_prompt_cache()
 
         # Precompute latent for video and prompt embedding
         if self.args.is_latent or self.args.is_prompt_latent:
@@ -304,6 +307,41 @@ class Trainer:
             pin_memory=self.args.pin_memory,
             shuffle=True,
         )
+
+    def get_vae_dtype(self) -> torch.dtype:
+        """Return the dtype used by the frozen VAE during training.
+
+        CogVideoX follows the mixed-precision training dtype. Wan overrides
+        this hook because its VAE is expected to encode and decode in fp32.
+        """
+        return self.state.weight_dtype
+
+    def prepare_empty_prompt_cache(self) -> None:
+        """Create the model-specific empty prompt embedding before workers start.
+
+        CogVideoX and Wan both expose 4096-dimensional text embeddings, but
+        they use different text encoders and their cache files are not
+        interchangeable. Generating the cache here also avoids concurrent GPU
+        text encoding from data-loader workers on the first training run.
+        """
+        if not self.args.empty_prompt:
+            return
+
+        cache_root = Path(self.args.prompt_cache)
+        if not cache_root.is_absolute():
+            cache_root = Path(self.args.data_root) / "cache" / cache_root
+        cache_path = (
+            cache_root
+            / "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.safetensors"
+        )
+
+        if self.accelerator.is_main_process and not cache_path.exists():
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            with torch.no_grad():
+                prompt_embedding = self.encode_text("")[0].detach().cpu().contiguous()
+            save_file({"prompt_embedding": prompt_embedding}, cache_path)
+            logger.info(f"Saved empty prompt embedding to {cache_path}")
+        self.accelerator.wait_for_everyone()
 
     def prepare_trainable_parameters(self):
         logger.info("Initializing trainable parameters")
@@ -489,6 +527,7 @@ class Trainer:
         self.accelerator.init_trackers(tracker_name, config=self.args.model_dump(), init_kwargs={
             "wandb": {
                 "name": exp_name,
+                "dir": str(self.args.output_dir),
             }
         })
 
@@ -702,7 +741,7 @@ class Trainer:
 
             if video is not None:
                 if self.args.raw_test:
-                    video = preprocess_video_match(video, is_match=True)
+                    video, *_ = preprocess_video_match(video, is_match=True)
                 else:
                     video = preprocess_video_with_resize(
                         video, self.state.train_frames, self.state.train_height, self.state.train_width
@@ -713,7 +752,7 @@ class Trainer:
 
             if ref_video is not None:
                 if self.args.raw_test:
-                    ref_video = preprocess_video_match(ref_video)
+                    ref_video, *_ = preprocess_video_match(ref_video)
                 else:
                     ref_video = preprocess_video_with_resize(
                         ref_video, self.state.train_frames, self.state.train_height, self.state.train_width
@@ -934,6 +973,16 @@ class Trainer:
                 if name in unload_list:
                     setattr(self.components, name, component.to("cpu"))
 
+    def load_transformer_for_lora_resume(self):
+        """Reload the base transformer used by a resumed DeepSpeed LoRA run."""
+        transformer_cls = unwrap_model(
+            self.accelerator, self.components.transformer
+        ).__class__
+        return transformer_cls.from_pretrained(
+            self.args.model_path,
+            subfolder="transformer",
+        )
+
     def __prepare_saving_loading_hooks(self, transformer_lora_config):
         # create custom saving & loading hooks so that `accelerator.save_state(...)` serializes in a nice format
         def save_model_hook(models, weights, output_dir):
@@ -973,9 +1022,7 @@ class Trainer:
                             f"Unexpected save model: {unwrap_model(self.accelerator, model).__class__}"
                         )
             else:
-                transformer_ = unwrap_model(
-                    self.accelerator, self.components.transformer
-                ).__class__.from_pretrained(self.args.model_path, subfolder="transformer")
+                transformer_ = self.load_transformer_for_lora_resume()
                 transformer_.add_adapter(transformer_lora_config)
 
             lora_state_dict = self.components.pipeline_cls.lora_state_dict(input_dir)

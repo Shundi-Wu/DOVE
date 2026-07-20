@@ -1,8 +1,77 @@
+# System and editor files
 .DS_Store
-datasets/*
-finetune/checkpoint/*
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.nfs*
+
+# Python bytecode and tool caches
 __pycache__/
 *.py[cod]
 *$py.class
-pretrained_models/CogVideoX1.5-5B
-pretrained_models/DOVE
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.ipynb_checkpoints/
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+*.so
+
+# Local environments and secrets
+.venv/
+venv/
+env/
+.direnv/
+.env
+.env.*
+!.env.example
+
+# Package-manager caches stored inside the repository
+.uv-cache/
+.uv_cache/
+uv_cache/
+pip-wheel-metadata/
+
+# Local datasets; keep the repository documentation and bundled demos
+datasets/*
+!datasets/README.md
+!datasets/demo/
+!datasets/demo/**
+
+# Downloaded model weights; keep only the checked-in metadata/default embedding
+pretrained_models/*
+!pretrained_models/README.md
+!pretrained_models/prompt_embeddings/
+pretrained_models/prompt_embeddings/*
+!pretrained_models/prompt_embeddings/e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.safetensors
+
+# Training checkpoints, logs, and generated outputs
+finetune/checkpoint/
+finetune/logs/
+finetune/wandb/
+checkpoint/
+checkpoints/
+logs/
+wandb/
+output/
+outputs/
+results/
+runs/
+lightning_logs/
+*.log
+slurm-*.out
+
+# Temporary files
+*.tmp
+*.temp
+*.bak

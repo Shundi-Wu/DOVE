@@ -3,22 +3,32 @@ import shutil
 import json
 import argparse
 import subprocess
+import sys
 from pathlib import Path
+
 
 def run_zero_to_fp32(checkpoint_dir, output_dir):
     print("Running zero_to_fp32.py with --safe_serialization...")
-    subprocess.run([
-        "python3", "finetune/scripts/zero_to_fp32.py",
-        checkpoint_dir,
-        output_dir,
-        "--safe_serialization"
-    ], check=True)
+    converter_script = Path(__file__).resolve().with_name("zero_to_fp32.py")
+    subprocess.run(
+        [
+            sys.executable,
+            str(converter_script),
+            checkpoint_dir,
+            output_dir,
+            "--safe_serialization",
+        ],
+        check=True,
+    )
+
 
 def rename_weights(output_dir):
     print("Renaming safetensors files and updating index JSON...")
 
     index_file = os.path.join(output_dir, "model.safetensors.index.json")
-    new_index_file = os.path.join(output_dir, "diffusion_pytorch_model.safetensors.index.json")
+    new_index_file = os.path.join(
+        output_dir, "diffusion_pytorch_model.safetensors.index.json"
+    )
     os.rename(index_file, new_index_file)
 
     with open(new_index_file, "r", encoding="utf-8") as f:
@@ -37,8 +47,11 @@ def rename_weights(output_dir):
     for file in os.listdir(output_dir):
         if file.startswith("model-") and file.endswith(".safetensors"):
             old_path = os.path.join(output_dir, file)
-            new_path = os.path.join(output_dir, file.replace("model-", "diffusion_pytorch_model-"))
+            new_path = os.path.join(
+                output_dir, file.replace("model-", "diffusion_pytorch_model-")
+            )
             os.rename(old_path, new_path)
+
 
 def prepare_ckpt_structure(output_dir, weights_source_dir, ckpt_output_dir):
     print(f"Copying from {weights_source_dir} to {ckpt_output_dir}...")
@@ -49,7 +62,9 @@ def prepare_ckpt_structure(output_dir, weights_source_dir, ckpt_output_dir):
     transformer_dir = os.path.join(ckpt_output_dir, "transformer")
 
     if os.path.exists(transformer_dir):
-        print(f"Cleaning transformer directory at {transformer_dir} but keeping config.json...")
+        print(
+            f"Cleaning transformer directory at {transformer_dir} but keeping config.json..."
+        )
         for item in os.listdir(transformer_dir):
             item_path = os.path.join(transformer_dir, item)
             if os.path.basename(item_path) == "config.json":
@@ -68,27 +83,38 @@ def prepare_ckpt_structure(output_dir, weights_source_dir, ckpt_output_dir):
 
     print("Checkpoint structure updated.")
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint_dir", required=True, help="Input checkpoint folder (e.g., path/checkpoint-12)")
-    parser.add_argument("--mid_output_dir", default="", help="Path to store merged FP32 weights")
-    parser.add_argument("--weights_source", default=os.path.expanduser("../../pretrained_models/CogVideoX1.5-5B"),
-                        help="Path to original CogVideo weights")
-    parser.add_argument("--ckpt_output_dir", default="",
-                        help="Path to final output ckpt directory")
+    parser.add_argument(
+        "--checkpoint_dir",
+        required=True,
+        help="Input checkpoint folder (e.g., path/checkpoint-12)",
+    )
+    parser.add_argument(
+        "--mid_output_dir", default="", help="Path to store merged FP32 weights"
+    )
+    parser.add_argument(
+        "--weights_source",
+        default=os.path.expanduser("../../pretrained_models/CogVideoX1.5-5B"),
+        help="Path to original CogVideo weights",
+    )
+    parser.add_argument(
+        "--ckpt_output_dir", default="", help="Path to final output ckpt directory"
+    )
 
     args = parser.parse_args()
 
     if args.mid_output_dir == "":
-        mid_output_dir = args.checkpoint_dir + '-fp32'
+        mid_output_dir = args.checkpoint_dir + "-fp32"
     else:
         mid_output_dir = args.mid_output_dir
 
     if args.ckpt_output_dir == "":
-        ckpt_output_dir = args.checkpoint_dir.replace('/checkpoint-', '/ckpt-') + '-sft'
+        ckpt_output_dir = args.checkpoint_dir.replace("/checkpoint-", "/ckpt-") + "-sft"
     else:
         ckpt_output_dir = args.ckpt_output_dir
-    
+
     if os.path.exists(ckpt_output_dir):
         print(f"[Skipped] {ckpt_output_dir} already exists. Skipping processing.")
         return
@@ -102,6 +128,7 @@ def main():
         shutil.rmtree(mid_output_dir)
 
     print("All done!")
+
 
 if __name__ == "__main__":
     main()

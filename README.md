@@ -86,18 +86,26 @@
 ## ⚙️ Dependencies
 
 - Python 3.11
-- PyTorch\>=2.5.0
-- Diffusers
+- PyTorch 2.6.0 with CUDA 12.4
+- Diffusers 0.35 or newer
 
 ```bash
 # Clone the github repo and go to the default directory 'DOVE'.
 git clone https://github.com/zhengchen1999/DOVE.git
-conda create -n DOVE python=3.11
-conda activate DOVE
-pip install -r requirements.txt
-pip install diffusers["torch"] transformers
-pip install pyiqa
+cd DOVE
+
+# Creates the persistent project-local .venv and installs the locked cu124 stack.
+uv sync --locked
+
+# Verify that the host driver can run the locked CUDA build.
+uv run python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
 ```
+
+The project uses `pyproject.toml` and the committed `uv.lock` as the source of
+truth. PyTorch and TorchVision are pinned to the official CUDA 12.4 wheel
+index, while the NVIDIA driver remains provided by the host. Run commands with
+`uv run`, for example `uv run bash finetune/train_ddp_wan_s1.sh`; activating
+`.venv` manually is optional.
 
 ## 🔗 Contents
 
@@ -176,6 +184,8 @@ We provide pretrained weights for DOVE and DOVE-2B.
 ## <a name="training"></a>🔧 Training
 
 > **Note:** The included `finetune/accelerate_config.yaml` is configured for 4 GPUs. Check `nvidia-smi` first and set its `gpu_ids` to idle physical GPU IDs (currently `0, 1, 2, 3`); use LoRA fine-tuning if memory is limited.
+> All training entry points use the shared Accelerate configuration and default
+> to DeepSpeed ZeRO-2 (`finetune/configs/zero2.yaml`).
 
 - Prepare Datasets and Pretrained Models. Download the following resources and place them in the specified directories:
 
@@ -225,6 +235,30 @@ We provide pretrained weights for DOVE and DOVE-2B.
   ```
 
   This stage further adjusts the model in pixel space to enhance the video restoration.
+
+### Wan2.1-T2V-1.3B training
+
+Wan training uses the official Diffusers checkpoint, matching the component
+layout already used by the CogVideoX training pipeline:
+
+```bash
+hf download Wan-AI/Wan2.1-T2V-1.3B-Diffusers \
+  --local-dir pretrained_models/Wan2.1-T2V-1.3B-Diffusers
+```
+
+Run Stage-1 with `bash finetune/train_ddp_wan_s1.sh`. Before Stage-2, assemble
+the trained transformer with the same original Wan source directory:
+
+```bash
+cd finetune
+python scripts/prepare_sft_ckpt.py \
+    --checkpoint_dir checkpoint/DOVE-Wan-s1/checkpoint-10000 \
+    --weights_source ../pretrained_models/Wan2.1-T2V-1.3B-Diffusers
+bash train_ddp_wan_s2.sh
+```
+
+The checkpoint preparation script keeps the Diffusers component layout and
+replaces only the trained transformer weights.
 
 - After Stage-2, convert the final checkpoint to a loadable format:
 

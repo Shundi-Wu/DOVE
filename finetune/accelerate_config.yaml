@@ -5,8 +5,8 @@ num_processes: 4  # should be the same as the number of GPUs
 
 debug: false
 deepspeed_config:
-  deepspeed_config_file: configs/zero3.yaml  # e.g. configs/zero2.yaml, need use absolute path
-  zero3_init_flag: true
+  deepspeed_config_file: configs/zero2.yaml  # e.g. configs/zero3.yaml, need use absolute path
+  #zero3_init_flag: true
 distributed_type: DEEPSPEED
 downcast_bf16: 'no'
 enable_cpu_affinity: false

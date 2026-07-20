@@ -104,6 +104,10 @@ class Args(BaseModel):
     ########## Flow Match ##########
     noise_step: int = 700
     shift_t: float = 1.0
+    # Fixed, already-shifted flow-matching noise level used by the one-step
+    # Wan restoration objective. This is intentionally separate from the
+    # CogVideoX discrete ``sr_noise_step``.
+    flow_sigma: float = 0.4
 
     ########## GAN ##########
     diffusion_gan_max_timestep: int = 1000
@@ -296,6 +300,7 @@ class Args(BaseModel):
         # Flow Match parameters
         parser.add_argument("--noise_step", type=int, default=700)
         parser.add_argument("--shift_t", type=float, default=1.0)
+        parser.add_argument("--flow_sigma", type=float, default=0.4)
 
         # GAN parameters
         parser.add_argument("--diffusion_gan_max_timestep", type=int, default=1000)

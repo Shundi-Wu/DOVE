@@ -5,7 +5,15 @@ from typing import List, Tuple
 import cv2
 import torch
 from torchvision.transforms.functional import resize
-from torchvision.io import write_video, read_video
+
+try:
+    from torchvision.io import read_video, write_video
+except ImportError:
+    # torchvision 0.28 removed the legacy video I/O API. Keep the dataset
+    # module importable; the only helper that needs these symbols reports a
+    # targeted error if it is explicitly used.
+    read_video = None
+    write_video = None
 
 import random
 import math
@@ -333,6 +341,11 @@ def crop_padded_video(artifact_value, ref_video):
     return cropped_imgs
 
 def save_and_reload_video(video_tensor, temp_path, fps=8):
+    if write_video is None or read_video is None:
+        raise RuntimeError(
+            "save_and_reload_video requires torchvision's legacy video I/O API; "
+            "use torchvision<0.28 or replace this optional helper with TorchCodec"
+        )
     # F, C, H, W // 0, 1
     video_tensor = video_tensor.permute(0, 2, 3, 1)
     video_tensor = (video_tensor * 255).clamp(0, 255).to(torch.uint8).contiguous()
