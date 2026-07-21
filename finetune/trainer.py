@@ -741,7 +741,7 @@ class Trainer:
 
             if video is not None:
                 if self.args.raw_test:
-                    video, *_ = preprocess_video_match(video, is_match=True)
+                    video = preprocess_video_match(video, is_match=True)
                 else:
                     video = preprocess_video_with_resize(
                         video, self.state.train_frames, self.state.train_height, self.state.train_width
@@ -752,7 +752,7 @@ class Trainer:
 
             if ref_video is not None:
                 if self.args.raw_test:
-                    ref_video, *_ = preprocess_video_match(ref_video)
+                    ref_video = preprocess_video_match(ref_video)
                 else:
                     ref_video = preprocess_video_with_resize(
                         ref_video, self.state.train_frames, self.state.train_height, self.state.train_width
@@ -961,9 +961,14 @@ class Trainer:
         for name, component in components.items():
             if not isinstance(component, type) and hasattr(component, "to"):
                 if name not in ignore_list:
-                    setattr(
-                        self.components, name, component.to(self.accelerator.device, dtype=dtype)
-                    )
+                    if name == "vae":
+                        vae_dtype = self.get_vae_dtype()
+                        if component.dtype != vae_dtype:
+                            component = component.to(dtype=vae_dtype)
+                        component = component.to(self.accelerator.device)
+                    else:
+                        component = component.to(self.accelerator.device, dtype=dtype)
+                    setattr(self.components, name, component)
 
     def __move_components_to_cpu(self, unload_list: List[str] = []):
         unload_list = set(unload_list)

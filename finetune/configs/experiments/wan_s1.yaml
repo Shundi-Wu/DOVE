@@ -1,0 +1,60 @@
+name: wan-s1
+
+runtime:
+  accelerate_config: accelerate_config.yaml
+  entrypoint: train.py
+  tee: true
+
+environment:
+  TOKENIZERS_PARALLELISM: "false"
+
+args:
+  model_path: ../pretrained_models/Wan2.1-T2V-1.3B-Diffusers
+  model_name: wan-s1
+  model_type: real-sr
+  training_type: sft
+
+  output_dir: checkpoint/DOVE-Wan-s1
+  report_to: wandb
+
+  data_root: ../datasets/train
+  video_column: ../datasets/train/HQ-VSR.txt
+  train_resolution: 25x320x640
+
+  train_epochs: 1000
+  train_steps: 10000
+  seed: 42
+  batch_size: 2
+  gradient_accumulation_steps: 1
+  mixed_precision: bf16
+  learning_rate: 2.0e-5
+  gradient_checkpointing: true
+  max_grad_norm: 0.1
+  lr_scheduler: constant_with_warmup
+
+  num_workers: 8
+  pin_memory: true
+  nccl_timeout: 1800
+  stastic_frequency: 500
+
+  checkpointing_steps: 500
+  checkpointing_limit: 3
+
+  do_validation: true
+  validation_dir: ../datasets/test/UDM10
+  validation_steps: 500
+  validation_prompts: null
+  validation_images: null
+  validation_videos: LQ-Video.txt
+  validation_ref_videos: GT-Video.txt
+  gen_fps: 8
+  raw_test: true
+  num_inference_steps: 1
+  eval_metric_list: psnr,ssim,lpips,dists,clipiqa
+
+  is_latent: false
+  is_cache: true
+  empty_prompt: true
+  prompt_cache: ../pretrained_models/prompt_embeddings/wan2.1-t2v-1.3b
+  flow_sigma: 0.4
+  degradation_config: configs/degradation.yaml
