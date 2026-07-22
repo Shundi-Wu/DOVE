@@ -62,6 +62,10 @@ class RealSRImageVideoDataset(Dataset):
         # video/prompt 顺序对应
         self.videos = load_videos_with_root(video_column, data_root)
         self.images = load_videos_with_root(image_column, image_data_root)
+        if not self.videos:
+            raise ValueError("The video dataset is empty")
+        if not self.images:
+            raise ValueError("The image dataset is empty")
         if len(self.images) > len(self.videos):
             repeat_times = math.ceil(len(self.images) / len(self.videos))
             self.videos = (self.videos * repeat_times)[:len(self.images)]
@@ -129,7 +133,9 @@ class RealSRImageVideoDataset(Dataset):
         train_resolution_str = "x".join(str(x) for x in self.trainer.args.train_resolution)
 
         # Image
-        image_path = self.images[index]
+        # The image and video lists are independent and commonly have different
+        # lengths. Cycle the shorter image list across the video-length epoch.
+        image_path = self.images[index % len(self.images)]
         # [B, C, F, H, W]
         image_lq_frames_resize, image_hq_frames = self.preprocess_image_video(image_path, 'image')
 
